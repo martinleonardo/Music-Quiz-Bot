@@ -132,3 +132,4 @@ dmypy.json
 /cogs/tracks.data
 
 /.idea/
+/cogs/ignore_*
