@@ -34,7 +34,8 @@ class WordQuiz(commands.Cog):
     async def guess(self, ctx, *, word):
         word = word.upper()
         if word == self.current_word:
-            await ctx.send('Correct! The word was: ' + self.current_word + '. It took ' + len(self.guessed_words)+1 + '/6 tries')
+            await ctx.send('Correct! The word was: ' + self.current_word + '. It took ' + str(len(self.guessed_words)+1) + '/6 tries')
+            await self.refresh_word()
             return
         if len(word) != 5:
             await ctx.send('Invalid word length. Must be 5 letters.')
@@ -50,10 +51,12 @@ class WordQuiz(commands.Cog):
         for i in range(len(word)):
             if word[i] == self.current_word[i]:
                 hint += '__**' + word[i] + '**__'
-                self.letters_correct.append(word[i])
+                if word[i] not in self.letters_correct:
+                    self.letters_correct.append(word[i])
             elif word[i] in self.letters:
                 hint += '***' + word[i] + '***'
-                self.letters_in_incorrect_spot.append(word[i])
+                if word[i] not in self.letters_in_incorrect_spot:
+                    self.letters_in_incorrect_spot.append(word[i])
             else:
                 hint += word[i]
             if word[i] in self.letters_other:
@@ -62,8 +65,23 @@ class WordQuiz(commands.Cog):
         await ctx.send('Guess ' + str(len(self.guessed_words)) + '/6.\n' + hint)
 
         if len(self.guessed_words) > 5:
-            await ctx.send('Nice try! You have run out of guesses. New word is being generated.')
+            await ctx.send('Nice try! You have run out of guesses. The word was : ' + self.current_word + '\nNew word is being generated.')
             await self.refresh_word()
+
+    @commands.command(description="new word")
+    async def new_word(self, ctx):
+        await ctx.send('The word was : ' + self.current_word + '\nA new word has been generated! Enjoy!')
+        await self.refresh_word()
+
+    @commands.command(description="check if valid word")
+    async def word_check(self, ctx, *, word):
+        word = word.upper()
+        response = ''
+        if word in self.word_list:
+            response = word.upper() + ' is a valid word'
+        else:
+            response = word.upper() + ' is **not** a valid word'
+        await ctx.send(response)
 
     @commands.command(description="reveal word")
     async def reveal(self, ctx):
@@ -86,7 +104,7 @@ class WordQuiz(commands.Cog):
     async def refresh_word(self):
         self.letters_correct = []
         self.letters_in_incorrect_spot = []
-        letters_other = list(self.alphabet_string)
+        self.letters_other = list(self.alphabet_string)
         self.guessed_words = []
         await self.random_word()
 
