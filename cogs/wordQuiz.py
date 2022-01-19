@@ -14,10 +14,11 @@ class WordQuiz(commands.Cog):
     guessed_words = []
     current_word = ''
     letters = []
-    letters_correct = []
+    letters_correct = [False, False, False, False, False]
     letters_in_incorrect_spot = []
     alphabet_string = string.ascii_uppercase
     letters_other = list(alphabet_string)
+    hint = ''
 
     @commands.Cog.listener()
     async def on_ready(self):
@@ -46,23 +47,30 @@ class WordQuiz(commands.Cog):
         if word in self.guessed_words:
             await ctx.send('Word has already been guessed.')
             return
-        hint = ''
         self.guessed_words.append(word)
+        letters_copy = self.letters
         for i in range(len(word)):
             if word[i] == self.current_word[i]:
-                hint += '__**' + word[i] + '**__'
-                if word[i] not in self.letters_correct:
-                    self.letters_correct.append(word[i])
-            elif word[i] in self.letters:
-                hint += '***' + word[i] + '***'
+                if word[i] in letters_copy:
+                    letters_copy.remove(word[i])
+        for i in range(len(word)):
+            if word[i] == self.current_word[i]:
+                self.hint += '__**' + word[i] + '**__'
+                self.letters_correct[i] = True
+                if word[i] in self.letters_in_incorrect_spot:
+                    self.letters_in_incorrect_spot.remove(word[i])
+            elif word[i] in letters_copy:
+                self.hint += '***' + word[i] + '***'
                 if word[i] not in self.letters_in_incorrect_spot:
                     self.letters_in_incorrect_spot.append(word[i])
+                letters_copy.remove(word[i])
             else:
-                hint += word[i]
+                self.hint += word[i]
             if word[i] in self.letters_other:
                 self.letters_other.remove(word[i])
-            hint += ' '
-        await ctx.send('Guess ' + str(len(self.guessed_words)) + '/6.\n' + hint)
+            self.hint += ' '
+        self.hint += '\n'
+        await ctx.send('Guess ' + str(len(self.guessed_words)) + '/6.\n' + self.hint)
 
         if len(self.guessed_words) > 5:
             await ctx.send('Nice try! You have run out of guesses. The word was : ' + self.current_word + '\nNew word is being generated.')
@@ -74,13 +82,14 @@ class WordQuiz(commands.Cog):
         await self.refresh_word()
 
     @commands.command(description="check if valid word")
-    async def word_check(self, ctx, *, word):
-        word = word.upper()
-        response = ''
-        if word in self.word_list:
-            response = word.upper() + ' is a valid word'
-        else:
-            response = word.upper() + ' is **not** a valid word'
+    async def word_check(self, ctx, *words):
+        response = 'The following words are valid:\n'
+        for word in words:
+            word = word.upper()
+            if word in self.word_list:
+                response += word + '\n'
+        if response == 'The following words are valid:\n':
+            response = 'No valid words given.'
         await ctx.send(response)
 
     @commands.command(description="reveal word")
@@ -90,8 +99,11 @@ class WordQuiz(commands.Cog):
     @commands.command(description="print remaining letters")
     async def remaining_letters(self, ctx):
         response = 'Letters in correct place:\n'
-        for letter in self.letters_correct:
-            response += '__**' + letter + '**__ '
+        for i in range(len(self.letters_correct)):
+            if self.letters_correct[i]:
+                response += str(await self.emoji(self.current_word[i]))
+            else:
+                response += ':blue_square:'
         response += '\nLetters in incorrect place:\n'
         for letter in self.letters_in_incorrect_spot:
             response += '***' + letter + '*** '
@@ -100,12 +112,15 @@ class WordQuiz(commands.Cog):
             response += '' + letter + ' '
         await ctx.send(response)
 
+    async def emoji(self, letter):
+        return ':regional_indicator_' + letter.lower() + ':'
 
     async def refresh_word(self):
-        self.letters_correct = []
+        self.letters_correct = [False, False, False, False, False]
         self.letters_in_incorrect_spot = []
         self.letters_other = list(self.alphabet_string)
         self.guessed_words = []
+        self.hint = ''
         await self.random_word()
 
     async def random_word(self):
