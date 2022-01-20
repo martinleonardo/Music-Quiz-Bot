@@ -34,25 +34,32 @@ class WordQuiz(commands.Cog):
     @commands.command(description="guess word")
     async def guess(self, ctx, *, word):
         word = word.upper()
+        # Correct word
         if word == self.current_word:
             await ctx.send('Correct! The word was: ' + self.current_word + '. It took ' + str(len(self.guessed_words)+1) + '/6 tries')
             await self.refresh_word()
             return
+        # Incorrect length
         if len(word) != 5:
             await ctx.send('Invalid word length. Must be 5 letters.')
             return
+        # Invalid word
         if word not in self.word_list:
             await ctx.send('Invalid word.')
             return
+        # Word already guessed
         if word in self.guessed_words:
             await ctx.send('Word has already been guessed.')
             return
+        # Valid guess, but not right
         self.guessed_words.append(word)
         letters_copy = self.letters
+        # Check if letters will be used up by correctly placed letters
         for i in range(len(word)):
             if word[i] == self.current_word[i]:
                 if word[i] in letters_copy:
                     letters_copy.remove(word[i])
+        # Mark letters with hints
         for i in range(len(word)):
             if word[i] == self.current_word[i]:
                 self.hint += '__**' + word[i] + '**__'
@@ -70,8 +77,8 @@ class WordQuiz(commands.Cog):
                 self.letters_other.remove(word[i])
             self.hint += ' '
         self.hint += '\n'
-        await ctx.send('Guess ' + str(len(self.guessed_words)) + '/6.\n' + self.hint)
-
+        await ctx.send('Guess ' + str(len(self.guessed_words)) + '/6.\n' + self.hint + '\n' + await self.remaining_letters_response())
+        # If more than 5 guesses have been made, end round and generate new word
         if len(self.guessed_words) > 5:
             await ctx.send('Nice try! You have run out of guesses. The word was : ' + self.current_word + '\nNew word is being generated.')
             await self.refresh_word()
@@ -98,6 +105,13 @@ class WordQuiz(commands.Cog):
 
     @commands.command(description="print remaining letters")
     async def remaining_letters(self, ctx):
+        response = await self.remaining_letters_response()
+        await ctx.send(response)
+
+    async def emoji(self, letter):
+        return ':regional_indicator_' + letter.lower() + ':'
+
+    async def remaining_letters_response(self):
         response = 'Letters in correct place:\n'
         for i in range(len(self.letters_correct)):
             if self.letters_correct[i]:
@@ -110,10 +124,7 @@ class WordQuiz(commands.Cog):
         response += '\nLetters left to guess:\n'
         for letter in self.letters_other:
             response += '' + letter + ' '
-        await ctx.send(response)
-
-    async def emoji(self, letter):
-        return ':regional_indicator_' + letter.lower() + ':'
+        return response
 
     async def refresh_word(self):
         self.letters_correct = [False, False, False, False, False]
@@ -128,6 +139,7 @@ class WordQuiz(commands.Cog):
         self.letters = []
         for i in range(len(self.current_word)):
             self.letters.append(self.current_word[i])
+
 
 def setup(client):
     client.add_cog(WordQuiz(client))
