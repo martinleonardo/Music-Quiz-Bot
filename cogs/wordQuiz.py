@@ -31,7 +31,7 @@ class WordQuiz(commands.Cog):
 
         await self.refresh_word()
 
-    @commands.command(description="guess word")
+    @commands.command(description="guess word", aliases=['g'])
     async def guess(self, ctx, *, word):
         word = word.upper()
         # Correct word
@@ -53,7 +53,7 @@ class WordQuiz(commands.Cog):
             return
         # Valid guess, but not right
         self.guessed_words.append(word)
-        letters_copy = self.letters
+        letters_copy = self.letters.copy()
         # Check if letters will be used up by correctly placed letters
         for i in range(len(word)):
             if word[i] == self.current_word[i]:
@@ -102,6 +102,14 @@ class WordQuiz(commands.Cog):
     @commands.command(description="reveal word")
     async def reveal(self, ctx):
         print('Word: ' + self.current_word)
+
+    @commands.command(description="reveal word")
+    async def set_word(self, ctx, *, word):
+        self.current_word = word.upper()
+        self.letters = []
+        for i in range(len(self.current_word)):
+            self.letters.append(self.current_word[i])
+        await ctx.send('Word has been set.')
 
     @commands.command(description="print remaining letters")
     async def remaining_letters(self, ctx):
