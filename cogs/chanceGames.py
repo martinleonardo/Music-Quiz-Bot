@@ -10,13 +10,13 @@ class ChanceGames(commands.Cog):
     def __init__(self, client):
         self.client = client
 
-    @commands.command(description="flip a coin")
+    @commands.command(description="flip a coin", aliases=['coin_flip', 'flip'])
     async def flip_coin(self, ctx):
         heads_path = 'cogs/ignore_heads.png'
         tails_path = 'cogs/ignore_tails.png'
 
         # 0 = Heads,    1 = Tails
-        if random.randrange(1) == 0:
+        if random.randrange(2) == 0:
             file_exists = os.path.exists(heads_path)
             if file_exists:
                 await ctx.send('The coin lands on **HEADS**', file=discord.File(heads_path))
