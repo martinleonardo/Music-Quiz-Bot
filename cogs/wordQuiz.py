@@ -5,12 +5,15 @@ import discord
 from discord import FFmpegPCMAudio, ClientException
 from discord.ext import commands
 
+# Word lists adapted from cfreshman
+
 
 class WordQuiz(commands.Cog):
     def __init__(self, client):
         self.client = client
 
     word_list = []
+    word_list_common = []
     guessed_words = []
     current_word = ''
     letters = []
@@ -22,7 +25,14 @@ class WordQuiz(commands.Cog):
 
     @commands.Cog.listener()
     async def on_ready(self):
-        with open('cogs/words_alpha.txt') as f:
+        with open('cogs/words_common.txt') as f:
+            lines = f.readlines()
+
+        for line in lines:
+            line = line.strip()
+            self.word_list_common.append(line)
+
+        with open('cogs/words_other.txt') as f:
             lines = f.readlines()
 
         for line in lines:
@@ -44,7 +54,7 @@ class WordQuiz(commands.Cog):
             await ctx.send('Invalid word length. Must be 5 letters.')
             return
         # Invalid word
-        if word not in self.word_list:
+        if word not in self.word_list and word not in self.word_list_common:
             await ctx.send('Invalid word.')
             return
         # Word already guessed
@@ -93,7 +103,7 @@ class WordQuiz(commands.Cog):
         response = 'The following words are valid:\n'
         for word in words:
             word = word.upper()
-            if word in self.word_list:
+            if word in self.word_list or word in self.word_list_common:
                 response += word + '\n'
         if response == 'The following words are valid:\n':
             response = 'No valid words given.'
@@ -143,7 +153,7 @@ class WordQuiz(commands.Cog):
         await self.random_word()
 
     async def random_word(self):
-        self.current_word = random.choice(self.word_list).upper()
+        self.current_word = random.choice(self.word_list_common).upper()
         self.letters = []
         for i in range(len(self.current_word)):
             self.letters.append(self.current_word[i])
