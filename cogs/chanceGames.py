@@ -10,7 +10,7 @@ class ChanceGames(commands.Cog):
     def __init__(self, client):
         self.client = client
 
-    @commands.command(description="flip a coin", aliases=['coin_flip', 'flip'])
+    @commands.command(description="flip a coin", aliases=['coin_flip', 'flip', 'coin'])
     async def flip_coin(self, ctx):
         heads_path = 'cogs/ignore_heads.png'
         tails_path = 'cogs/ignore_tails.png'
@@ -28,6 +28,13 @@ class ChanceGames(commands.Cog):
                 await ctx.send('The coin lands on **TAILS**', file=discord.File(tails_path))
             else:
                 await ctx.send('The coin lands on **TAILS**')
+
+    @commands.command(description="Pick a number from 1-n (inclusive)", aliases=['random', 'number', 'randomnumber'])
+    async def random_number(self, ctx, *, max):
+        if isinstance(max, int):
+            await ctx.send('Your number is **' + random.randint(1,max) + '**.')
+        else:
+            await ctx.send('Please provide a valid integer')
 
 
 def setup(client):
