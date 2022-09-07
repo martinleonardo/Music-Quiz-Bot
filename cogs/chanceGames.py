@@ -31,9 +31,10 @@ class ChanceGames(commands.Cog):
 
     @commands.command(description="Pick a number from 1-n (inclusive)", aliases=['random', 'number', 'randomnumber'])
     async def random_number(self, ctx, *, max):
-        if isinstance(max, int):
-            await ctx.send('Your number is **' + random.randint(1,max) + '**.')
-        else:
+        try:
+            max = int(max)
+            await ctx.send('Your number is **' + str(random.randint(1, max)) + '**.')
+        except:
             await ctx.send('Please provide a valid integer')
 
 
