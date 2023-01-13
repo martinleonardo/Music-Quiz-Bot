@@ -29,7 +29,7 @@ class ChanceGames(commands.Cog):
             else:
                 await ctx.send('The coin lands on **TAILS**')
 
-    @commands.command(description="Pick a number from 1-n (inclusive)", aliases=['random', 'number', 'randomnumber'])
+    @commands.command(description="Pick a number from 1-n (inclusive)", aliases=['random', 'roll', 'number', 'randomnumber'])
     async def random_number(self, ctx, *, max):
         try:
             max = int(max)
