@@ -159,5 +159,5 @@ class WordQuiz(commands.Cog):
             self.letters.append(self.current_word[i])
 
 
-def setup(client):
-    client.add_cog(WordQuiz(client))
+async def setup(client):
+    await client.add_cog(WordQuiz(client))

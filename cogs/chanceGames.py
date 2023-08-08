@@ -38,5 +38,5 @@ class ChanceGames(commands.Cog):
             await ctx.send('Please provide a valid integer')
 
 
-def setup(client):
-    client.add_cog(ChanceGames(client))
+async def setup(client):
+    await client.add_cog(ChanceGames(client))
