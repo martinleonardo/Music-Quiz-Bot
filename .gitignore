@@ -133,3 +133,4 @@ dmypy.json
 
 /.idea/
 /cogs/ignore_*
+/data/*
