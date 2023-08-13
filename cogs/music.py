@@ -8,6 +8,7 @@ import json
 
 class Music(commands.Cog):
     def __init__(self, bot):
+        self.self = self
         self.bot = bot
         self.volume = self.load_volume()  # Load volume settings from file
         self.queue = []
@@ -33,21 +34,37 @@ class Music(commands.Cog):
 
     @commands.command()
     async def join(self, ctx):
-        channel = ctx.author.voice.channel
-        await channel.connect()
+        # Check is user is a voice channel
+        user_voice = ctx.author.voice
+        if not user_voice:
+            await ctx.send('Please join a voice channel to play something.')
+            return
+
+        # Check if bot is already in a voice channel
+        bot_voice = ctx.voice_client
+        if bot_voice:
+            # Do nothing if bot is already in user's voice channel
+            if user_voice.channel == bot_voice.channel:
+                return
+            # Leave current voice channel if not user's
+            await bot_voice.disconnect()
+
+        # Join user's voice channel
+        await user_voice.channel.connect()
 
     @commands.command()
     async def leave(self, ctx):
-        await ctx.voice_client.disconnect()
+        bot_voice = ctx.voice_client
+        # Check bot is in voice channel before trying to disconnect
+        if ctx.voice_client:
+            await bot_voice.disconnect()
 
     @commands.command()
-    async def play(self, ctx, *, searchword):
-        voice_client = ctx.voice_client
-
-        if not voice_client or not voice_client.is_connected():
-            # Join the user's voice channel if not already connected
-            channel = ctx.author.voice.channel
-            await channel.connect()
+    async def play(self, ctx, *, search_word):
+        self.self = self
+        bot_voice = ctx.voice_client
+        # Join user's voice channel if not already in it
+        await self.join(ctx)
 
         ydl_opts = {
             'format': 'bestaudio[ext=mp3]/bestaudio/best',
@@ -60,17 +77,17 @@ class Music(commands.Cog):
 
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             # Given a url
-            if searchword[0:4] == "http" or searchword[0:3] == "www":
-                info = ydl.extract_info(searchword, download=False)
+            if search_word[0:4] == "http" or search_word[0:3] == "www":
+                info = ydl.extract_info(search_word, download=False)
             # Else, search instead
             else:
-                info = ydl.extract_info(f"ytsearch:{searchword}", download=False)["entries"][0]
+                info = ydl.extract_info(f"ytsearch:{search_word}", download=False)["entries"][0]
             url = info['url']
             title = info.get('title', 'Unknown')
 
         self.queue.append({"url": url, "title": title})
 
-        if not voice_client.is_playing():
+        if not bot_voice.is_playing():
             await self.play_next(ctx)
 
     async def play_next(self, ctx):
