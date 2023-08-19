@@ -59,4 +59,5 @@ async def load_cogs():
         if filename.endswith('.py'):
             await load_extension_cog(f'cogs.{filename[:-3]}')
 
+
 client.run(os.environ.get('ABBOT_TOKEN'))

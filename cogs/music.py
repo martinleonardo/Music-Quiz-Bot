@@ -1,10 +1,11 @@
+import asyncio
 import os
 
 import discord
 import yt_dlp
 from discord.ext import commands
 import json
-
+from gtts import gTTS
 
 class Music(commands.Cog):
     def __init__(self, bot):
@@ -15,7 +16,7 @@ class Music(commands.Cog):
 
     def load_volume(self):
         try:
-            with open('data/volume_settings.json', 'r') as file:
+            with open('../data/volume_settings.json', 'r') as file:
                 return json.load(file)
         except FileNotFoundError:
             print('No volume file found. Using default values.')
@@ -136,6 +137,24 @@ class Music(commands.Cog):
         self.queue.clear()
         await ctx.send("Queue has been cleared.")
 
+    @commands.command()
+    async def say(self, ctx, *, text):
+        voice_client = ctx.voice_client
 
+        if not voice_client or not voice_client.is_connected():
+            await self.join(ctx)
+            voice_client = ctx.voice_client
+
+        # Convert the text to speech
+        tts = gTTS(text=text)
+        tts.save("data/tts.mp3")  # Save the TTS audio as an MP3 file
+
+        # Play the TTS audio in the voice channel
+        voice_client.play(discord.FFmpegPCMAudio("data/tts.mp3"))
+
+        # Delete the temporary MP3 file after it's played
+        while voice_client.is_playing():
+            await asyncio.sleep(1)  # Wait for playback to finish
+        os.remove("data/tts.mp3")
 async def setup(bot):
     await bot.add_cog(Music(bot))
