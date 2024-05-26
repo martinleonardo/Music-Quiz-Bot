@@ -62,10 +62,11 @@ class ChanceGames(commands.Cog):
             case "reset":
                 self.deathroll_player_rolls[player_id] = PlayerData(100)
                 await ctx.send('Resetting roll for player ' + ctx.message.author.name)
-                # return
+                return
             case "resetall":
                 self.deathroll_player_rolls = {}
                 await ctx.send('Resetting all player rolls')
+                return
             case _:
                 await ctx.send('Invalid argument ' + arg + '. Ignoring.')
         
