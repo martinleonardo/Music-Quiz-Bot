@@ -71,15 +71,9 @@ class ChanceGames(commands.Cog):
         
 
         if self.new_player(player_id):
-            print("New player")
             self.deathroll_player_rolls[player_id] = PlayerData(100)
         
         elif self.expired_roll(player_id):
-            print("Expired")
-            self.deathroll_player_rolls[player_id] = PlayerData(100)
-
-        elif self.deathroll_player_rolls[player_id].upper_limit == 1:
-            print("Player already lost")
             self.deathroll_player_rolls[player_id] = PlayerData(100)
 
         old_limit = self.deathroll_player_rolls[player_id].upper_limit
