@@ -67,15 +67,21 @@ class ChanceGames(commands.Cog):
                 self.deathroll_player_rolls = {}
                 await ctx.send('Resetting all player rolls')
                 return
+            case "list":
+                for k in self.deathroll_player_rolls.keys():
+                    await ctx.send(str(k) + " has " + str(self.deathroll_player_rolls[k].upper_limit))
+                return
             case _:
                 await ctx.send('Invalid argument ' + arg + '. Ignoring.')
         
 
         if self.new_player(player_id):
             self.deathroll_player_rolls[player_id] = PlayerData(100)
+            await ctx.send('New player. Starting roll.')
         
         elif self.expired_roll(player_id):
             self.deathroll_player_rolls[player_id] = PlayerData(100)
+            await ctx.send('New player. Starting roll.')
 
         old_limit = self.deathroll_player_rolls[player_id].upper_limit
         new_limit = random.randint(1, old_limit)
@@ -83,7 +89,7 @@ class ChanceGames(commands.Cog):
         await ctx.send('Your number is **' + str(new_limit) + '** out of ' + str(old_limit) + '.')
 
         if new_limit != 1:
-            self.deathroll_player_rolls[player_id].upper_limit = random.randint(1, old_limit)
+            self.deathroll_player_rolls[player_id].upper_limit = new_limit
         else:
             await ctx.send('You have hit **1**. Keeping old roll for ties. Reset (!dr reset) to start over.')
         
