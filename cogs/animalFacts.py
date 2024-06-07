@@ -7,7 +7,7 @@ import random
 from cogs.music import Music
 
 
-class animalFacts(commands.Cog):
+class AnimalFacts(commands.Cog):
     def __init__(self, bot):
         self.self = self
         self.bot = bot
@@ -48,4 +48,4 @@ class animalFacts(commands.Cog):
 
 
 async def setup(client):
-    await client.add_cog(animalFacts(client))
+    await client.add_cog(AnimalFacts(client))
