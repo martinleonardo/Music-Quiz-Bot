@@ -114,7 +114,7 @@ class ChanceGames(commands.Cog):
             await interaction.response.send_message("Please provide a positive integer.")
             return
         number = random.randint(1, upper_limit)
-        await interaction.response.send_message(f'Your number is **{number}**.')
+        await interaction.response.send_message(f'Your number is **{number}** out of {upper_limit}.')
 
     @app_commands.command(name="random", description="Pick a number from 1-n (inclusive)")
     @app_commands.describe(upper_limit="The upper bound for the random number")
