@@ -1,4 +1,4 @@
-import discord
+from discord import app_commands
 from discord.ext import commands
 
 import os.path
@@ -80,120 +80,165 @@ class ChanceGames(commands.Cog):
                 winner = self.deathroll_player_rolls[player_id].player_name
         return winner
 
-    @commands.command(description="flip a coin", aliases=['coin_flip', 'flip', 'coin'])
-    async def flip_coin(self, ctx):
+    async def flip_logic(self, interaction: discord.Interaction):
         heads_path = 'cogs/ignore_heads.png'
         tails_path = 'cogs/ignore_tails.png'
 
-        # 0 = Heads,    1 = Tails
-        if random.randrange(2) == 0:
-            file_exists = os.path.exists(heads_path)
-            if file_exists:
-                await ctx.send('The coin lands on **HEADS**', file=discord.File(heads_path))
-            else:
-                await ctx.send('The coin lands on **HEADS**')
-        else:
-            file_exists = os.path.exists(tails_path)
-            if file_exists:
-                await ctx.send('The coin lands on **TAILS**', file=discord.File(tails_path))
-            else:
-                await ctx.send('The coin lands on **TAILS**')
+        result = 'HEADS' if random.randint(0, 1) == 0 else 'TAILS'
+        file_path = heads_path if result == 'HEADS' else tails_path
 
-    @commands.command(description="Pick a number from 1-n (inclusive)", aliases=['random', 'roll', 'number', 'randomnumber'])
-    async def random_number(self, ctx, *, upper_limit):
-        try:
-            upper_limit = int(upper_limit)
-            await ctx.send('Your number is **' + str(random.randint(1, upper_limit)) + '**.')
-        except:
-            await ctx.send('Please provide a valid integer')
+        if os.path.exists(file_path):
+            await interaction.response.send_message(
+                f'The coin lands on **{result}**',
+                file=discord.File(file_path)
+            )
+        else:
+            await interaction.response.send_message(f'The coin lands on **{result}**')
+
+    @app_commands.command(name="flip", description="Flip a coin")
+    async def flip(self, interaction: discord.Interaction):
+        await self.flip_logic(interaction)
+
+    @app_commands.command(name="coin", description="Flip a coin")
+    async def coin(self, interaction: discord.Interaction):
+        await self.flip_logic(interaction)
+
+    @app_commands.command(name="coin_flip", description="Flip a coin")
+    async def coin_flip(self, interaction: discord.Interaction):
+        await self.flip_logic(interaction)
+
+
+    async def random_number_logic(self, interaction: discord.Interaction, upper_limit: int):
+        if upper_limit <= 0:
+            await interaction.response.send_message("Please provide a positive integer.")
+            return
+        number = random.randint(1, upper_limit)
+        await interaction.response.send_message(f'Your number is **{number}**.')
+
+    @app_commands.command(name="random", description="Pick a number from 1-n (inclusive)")
+    @app_commands.describe(upper_limit="The upper bound for the random number")
+    async def random(self, interaction: discord.Interaction, upper_limit: int):
+        await self.random_number_logic(interaction, upper_limit)
+
+    @app_commands.command(name="roll", description="Pick a number from 1-n (inclusive)")
+    @app_commands.describe(upper_limit="The upper bound for the random number")
+    async def roll(self, interaction: discord.Interaction, upper_limit: int):
+        await self.random_number_logic(interaction, upper_limit)
 
     # TODO Add turn order?
     # TODO Add server info so users can play across different servers
-    @commands.command(description="Death roll. Option to add 'reset' or 'resetall',", aliases=['dr', 'deathroll', 'droll'])
-    async def death_roll(self, ctx, *args):
-        player_id = ctx.message.author.id
-        player_name = ctx.message.author.name
+    async def deathroll_logic(self, interaction: discord.Interaction, action: str = "roll", limit: int = None):
+        user = interaction.user
+        player_id = user.id
+        player_name = user.name
 
-        if not args:
-            args = ["roll"]
+        action = action.lower()
+        if action in ["reset", "resetall", "list", "set"] and limit is not None and action != "set":
+            await interaction.response.send_message("This action doesn't take a limit. Ignoring it.", ephemeral=True)
 
-        arg = args[0].lower()
-        match(arg):
-            case "roll":
-                pass
+        match action:
             case "reset":
                 self.deathroll_player_rolls[player_id] = PlayerData(player_name, self.max_roll)
-                await ctx.send('Resetting roll for player ' + ctx.message.author.name)
+                await interaction.response.send_message(f"Resetting roll for player {player_name}")
                 return
+
             case "resetall":
                 self.deathroll_player_rolls = {}
-                await ctx.send('Resetting all player rolls')
+                await interaction.response.send_message("Resetting all player rolls")
                 return
+
             case "list":
-                for temp_player_id in self.deathroll_player_rolls.keys():
-                    await ctx.send(self.deathroll_player_rolls[temp_player_id].player_name + " has a max roll of " + str(self.deathroll_player_rolls[temp_player_id].upper_limit) + " after " + self.deathroll_player_rolls[temp_player_id].roll_round + " rolls")
+                if not self.deathroll_player_rolls:
+                    await interaction.response.send_message("No players currently active.")
+                    return
+                msg = "\n".join(
+                    f"{p.player_name}: max roll {p.old_limit}, round {p.roll_round}"
+                    for p in self.deathroll_player_rolls.values()
+                )
+                await interaction.response.send_message(msg)
                 return
+
             case "set":
-                if not args[1] or not args[1].isnumeric():
-                    await ctx.send('Please provide a valid value to set upper limit to. Using old limit for now.')
-                    self.deathroll_player_rolls[player_id].new_limit = self.deathroll_player_rolls[player_id].old_limit
+                if limit is None or limit <= 1:
+                    await interaction.response.send_message("Please provide a valid upper limit (>1).")
                     return
-                
-                limit = args[1]
-                self.deathroll_player_rolls[player_id].old_limit = self.deathroll_player_rolls[player_id].new_limit = min(self.max_roll, int(limit))
+                limit = min(self.max_roll, limit)
+                self.deathroll_player_rolls[player_id] = PlayerData(player_name, limit)
+                await interaction.response.send_message(f"Set new max roll to {limit} for {player_name}")
                 return
-            case _:
-                if arg.isnumeric():
-                    self.deathroll_player_rolls[player_id].old_limit = self.deathroll_player_rolls[player_id].new_limit = min(self.max_roll, int(arg))
-                    await ctx.send('Resetting max roll to ' + str(min(self.max_roll, int(arg))))
-                    return
-                await ctx.send('Invalid argument ' + arg + '. Rolling as usual instead.')
-        
+
+
         if self.new_player(player_id) or self.expired_roll(player_id):
             if self.game_in_progress():
-                await ctx.send('Player cannot join due to game being in progress. Please wait for round to end.')
+                await interaction.response.send_message("Cannot join mid-game. Wait for round to end.")
                 return
             else:
                 self.deathroll_player_rolls[player_id] = PlayerData(player_name, self.max_roll)
-                await ctx.send('New player. Starting roll.')
+                await interaction.response.send_message("New player. Starting roll.")
         else:
             players_remaining = self.unrolled_players(self.deathroll_player_rolls[player_id].roll_round)
             if players_remaining:
-                await ctx.send('Cannot roll. Waiting on players: ' + str(players_remaining))
+                await interaction.response.send_message(
+                    "Cannot roll yet. Waiting on: " + ", ".join(players_remaining)
+                )
                 return
 
-        self.deathroll_player_rolls[player_id].old_limit = self.deathroll_player_rolls[player_id].new_limit
-        self.deathroll_player_rolls[player_id].new_limit = random.randint(1, self.deathroll_player_rolls[player_id].old_limit)
-        self.deathroll_player_rolls[player_id].roll_round += 1
-        self.deathroll_player_rolls[player_id].last_update = time.time()
-        
-        await ctx.send('Your number is **' + str(self.deathroll_player_rolls[player_id].new_limit) + '** out of ' + str(self.deathroll_player_rolls[player_id].old_limit) + ' for round ' + str(self.deathroll_player_rolls[player_id].roll_round))
+        pdata = self.deathroll_player_rolls[player_id]
+        pdata.old_limit = pdata.new_limit
+        pdata.new_limit = random.randint(1, pdata.old_limit)
+        pdata.roll_round += 1
+        pdata.last_update = time.time()
 
-        players_remaining = self.unrolled_players(self.deathroll_player_rolls[player_id].roll_round)
-        if players_remaining:
-            # Waiting for other players to finish rolls for round
+        await interaction.response.send_message(
+            f"**{player_name}** rolled **{pdata.new_limit}** out of {pdata.old_limit} for round {pdata.roll_round}"
+        )
+
+        if self.unrolled_players(pdata.roll_round):
             return
 
-        if self.deathroll_player_rolls[player_id].new_limit == 1:
-            # Should handle single player differently
-            if self.deathroll_player_rolls[player_id].roll_round == 1 and self.max_roll >= self.lol_threshold:
-                await ctx.send('lol')
+        if pdata.new_limit == 1:
+            if pdata.roll_round == 1 and self.max_roll >= self.lol_threshold:
+                await interaction.channel.send("lol")
             if self.all_rolled_1():
-                await ctx.send('All remaining players rolled 1. Redoing round.')
+                await interaction.channel.send("All players rolled 1. Redoing round.")
                 self.revert_limit()
                 return
-            
-        # Ignore first round since others will probably be joining
-        if self.deathroll_player_rolls[player_id].roll_round > 1 and len(self.deathroll_player_rolls) > 1:
+
+        if pdata.roll_round > 1 and len(self.deathroll_player_rolls) > 1:
             self.mark_lost_players()
             winner = self.only_winner_left()
             if winner:
-                await ctx.send("The winner is **" + winner + "** after " + str(self.deathroll_player_rolls[player_id].roll_round) + " rounds!")
-
-                await ctx.send("Resetting game")
+                await interaction.channel.send(f"The winner is **{winner}** after {pdata.roll_round} rounds!")
+                await interaction.channel.send("Resetting game.")
                 self.deathroll_player_rolls = {}
-                return
-            await ctx.send('All players have rolled for the round. You may begin round ' + str(self.deathroll_player_rolls[player_id].roll_round + 1))
+            else:
+                await interaction.channel.send(f"All players rolled. Begin round {pdata.roll_round + 1}")
+
+
+    @app_commands.command(name="deathroll", description="Death roll. Action = roll/reset/resetall/set/list")
+    @app_commands.describe(action="Choose roll/reset/resetall/set/list", limit="Optional number (used with 'set')")
+    async def deathroll(self, interaction: discord.Interaction, action: str = "roll", limit: int = None):
+        await self.deathroll_logic(interaction, action, limit)
+
+    @app_commands.command(name="dr", description="Death roll. Action = roll/reset/resetall/set/list")
+    @app_commands.describe(action="Choose roll/reset/resetall/set/list", limit="Optional number (used with 'set')")
+    async def dr(self, interaction: discord.Interaction, action: str = "roll", limit: int = None):
+        await self.deathroll_logic(interaction, action, limit)
+
+    @app_commands.command(name="droll", description="Death roll. Action = roll/reset/resetall/set/list")
+    @app_commands.describe(action="Choose roll/reset/resetall/set/list", limit="Optional number (used with 'set')")
+    async def droll(self, interaction: discord.Interaction, action: str = "roll", limit: int = None):
+        await self.deathroll_logic(interaction, action, limit)
+        
+    async def cog_load(self):
+        self.client.tree.add_command(self.flip)
+        self.client.tree.add_command(self.coin)
+        self.client.tree.add_command(self.coin_flip)
+        self.client.tree.add_command(self.random)
+        self.client.tree.add_command(self.roll)
+        self.client.tree.add_command(self.deathroll)
+        self.client.tree.add_command(self.dr)
+        self.client.tree.add_command(self.droll)
         
 
 async def setup(client):

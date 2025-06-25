@@ -10,11 +10,13 @@ intents.voice_states = True
 intents.message_content = True
 
 client = commands.Bot(command_prefix=prefix, intents=intents)
+tree = client.tree
 
 
 @client.event
 async def on_ready():
     await load_cogs()
+    await tree.sync()  # Syncs slash commands with Discord
     print(f'Logged in as {client.user.name} - {client.user.id}')
 
 
