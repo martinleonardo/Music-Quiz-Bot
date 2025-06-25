@@ -231,16 +231,6 @@ class ChanceGames(commands.Cog):
     async def droll(self, interaction: discord.Interaction, action: str = "roll", limit: int = None):
         await self.deathroll_logic(interaction, action, limit)
         
-    async def cog_load(self):
-        self.client.tree.add_command(self.flip)
-        self.client.tree.add_command(self.coin)
-        self.client.tree.add_command(self.coin_flip)
-        self.client.tree.add_command(self.random)
-        self.client.tree.add_command(self.roll)
-        self.client.tree.add_command(self.deathroll)
-        self.client.tree.add_command(self.dr)
-        self.client.tree.add_command(self.droll)
-        
 
 async def setup(client):
     await client.add_cog(ChanceGames(client))

@@ -16,7 +16,7 @@ tree = client.tree
 @client.event
 async def on_ready():
     await load_cogs()
-    await tree.sync()  # Syncs slash commands with Discord
+    await client.tree.sync()  # Syncs slash commands with Discord
     print(f'Logged in as {client.user.name} - {client.user.id}')
 
 
