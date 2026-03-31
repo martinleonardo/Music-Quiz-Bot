@@ -24,6 +24,7 @@ class ChanceGames(commands.Cog):
     def __init__(self, client):
         self.client = client
         self.deathroll_player_rolls = {}
+        self.last_roll_limit = {}
 
     def new_player(self, player_id):
         return player_id not in self.deathroll_player_rolls
@@ -109,21 +110,28 @@ class ChanceGames(commands.Cog):
         await self.flip_logic(interaction)
 
 
-    async def random_number_logic(self, interaction: discord.Interaction, upper_limit: int):
-        if upper_limit <= 0:
+    async def random_number_logic(self, interaction: discord.Interaction, upper_limit: int = None):
+        guild_id = interaction.guild_id
+        if upper_limit is None:
+            if guild_id not in self.last_roll_limit:
+                await interaction.response.send_message("No previous roll found. Please provide an upper limit.")
+                return
+            upper_limit = self.last_roll_limit[guild_id]
+        elif upper_limit <= 0:
             await interaction.response.send_message("Please provide a positive integer.")
             return
+        self.last_roll_limit[guild_id] = upper_limit
         number = random.randint(1, upper_limit)
         await interaction.response.send_message(f'Your number is **{number}** out of {upper_limit}.')
 
     @app_commands.command(name="random", description="Pick a number from 1-n (inclusive)")
     @app_commands.describe(upper_limit="The upper bound for the random number")
-    async def random(self, interaction: discord.Interaction, upper_limit: int):
+    async def random(self, interaction: discord.Interaction, upper_limit: int = None):
         await self.random_number_logic(interaction, upper_limit)
 
-    @app_commands.command(name="roll", description="Pick a number from 1-n (inclusive)")
+    @app_commands.command(name="roll", description="Pick a number from 1-n (inclusive). Do not include number to reuse last number.")
     @app_commands.describe(upper_limit="The upper bound for the random number")
-    async def roll(self, interaction: discord.Interaction, upper_limit: int):
+    async def roll(self, interaction: discord.Interaction, upper_limit: int = None):
         await self.random_number_logic(interaction, upper_limit)
 
     # TODO Add turn order?
