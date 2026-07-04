@@ -94,7 +94,7 @@ class UsageTracker(commands.Cog):
 
     @app_commands.command(
         name="tmar",
-        description="Times Torrance has mentioned marmar"
+        description="Times Torrance has mentioned MarMar"
     )
     async def tmar(self, interaction: discord.Interaction):
         key = "tmar"
@@ -108,6 +108,21 @@ class UsageTracker(commands.Cog):
             f"Times Torrance has mentioned marmar: **{count}**"
         )
 
+    @app_commands.command(
+        name="marflynn",
+        description="Times MarMar has mentioned Torrance"
+    )
+    async def marflynn(self, interaction: discord.Interaction):
+        key = "marflynn"
+
+        # Single source of truth
+        self.increment(key)
+
+        count = self.command_counts.get(key, 0)
+
+        await interaction.response.send_message(
+            f"Times MarMar has mentioned Torrance: **{count}**"
+        )
 
 
     # --------------------
